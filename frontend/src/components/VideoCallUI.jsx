@@ -8,16 +8,33 @@ import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Channel, Chat, MessageInput, MessageList, Thread, Window } from "stream-chat-react";
+import { toast } from "react-hot-toast";
 
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import "stream-chat-react/dist/css/v2/index.css";
 
-function VideoCallUI({ chatClient, channel }) {
+function VideoCallUI({ call, chatClient, channel}) {
   const navigate = useNavigate();
   const { useCallCallingState, useParticipantCount } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participantCount = useParticipantCount();
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const handleLeaveCall = async () => {
+  try {
+    if (call) {
+      await call.leave(); // CRITICAL (prevents duplicate users)
+    }
+  } catch (error) {
+    console.error("Error leaving call:", error);
+  } finally {
+    navigate("/dashboard"); // redirect always
+    toast('You left the call. This session is still active and can be rejoined.', {
+        icon: 'ℹ️',
+        });
+  }
+  };
+
 
   if (callingState === CallingState.JOINING) {
     return (
@@ -56,10 +73,11 @@ function VideoCallUI({ chatClient, channel }) {
         <div className="flex-1 bg-base-300 rounded-lg overflow-hidden relative">
           <SpeakerLayout />
         </div>
-
+          
         <div className="bg-base-100 p-3 rounded-lg shadow flex justify-center">
-          <CallControls onLeave={() => navigate("/dashboard")} />
+        <CallControls onLeave={handleLeaveCall} />
         </div>
+
       </div>
 
       {/* CHAT SECTION */}
